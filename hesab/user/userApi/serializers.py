@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 from user.models import User
+from user.models import MessageBox
 from rest_framework.validators import UniqueValidator
 
 class UserRegistretaionSerizalizers(serializers.ModelSerializer):
@@ -10,23 +11,25 @@ class UserRegistretaionSerizalizers(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['username','mobile','password','password2']
+        fields = '__all__'
 
     def validate(self, attrs):
-        print(attrs)
-        print('salam')
         if attrs['password'] != attrs['password2']:
             raise serializers.ValidationError("can't validate data")
         return attrs
     
     def create(self, validated_data):
-
-        print(validated_data)
-        print('by')
         user = User(
             mobile = validated_data['mobile'],
             username = validated_data['username'],
+            media = validated_data['media']
         )
         user.set_password(validated_data['password'])
         user.save()
         return user
+
+class UserMessageSerializers(serializers.ModelSerializer):
+    class Meta:
+        model = MessageBox
+        fields = ['sender','receiver','message']
+
