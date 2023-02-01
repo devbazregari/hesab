@@ -1,14 +1,17 @@
-from rest_framework.decorators import api_view , permission_classes
+from rest_framework.decorators import permission_classes
 from rest_framework.response import Response
 from knox.auth import AuthToken
-from .serializers import UserRegistretaionSerizalizers , UserMessageSerializers
+from .serializers import UserRegistretaionSerizalizers, DebtSerializers, UserMessageSerializers
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.generics import CreateAPIView , ListAPIView
-from user.models import MessageBox,User
+from user.models import MessageBox , User , Debt
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 from hesab.celery import app
 from user.tasks import my_task
 from django.http import HttpResponse
+from rest_framework import status
+from django.db.models import F
+
 
 class register(CreateAPIView):
     def post(self, request):
@@ -54,6 +57,33 @@ class show_user_message(ListAPIView):
     def get_queryset(self):
         User.objects.filter(pk=self.request.user.id).update(notif=False)
         return MessageBox.objects.filter(receiver=self.request.user.id).all()
+
+
+class SaveDebt(CreateAPIView):
+    permission_classes = (IsAuthenticated,)
+    def post(self, request):
+        try:
+            debtor = User.objects.get(pk=request.data['debtor'])
+            creditor = User.objects.get(pk=request.data['creditor'])
+            money = request.data['money']
+        except:
+            return Response("the user doesn't exist",status.HTTP_404_NOT_FOUND)
+
+        if Debt.objects.filter(debtor_id=debtor.pk).filter(creditor=creditor.pk):
+            print('inja')
+            last_debt = Debt.objects.filter(debtor_id=debtor.pk).filter(creditor_id=creditor.pk).last()
+            last_debt.money += money
+            last_debt.save()
+            return Response(
+            "debt been sended",status.HTTP_200_OK
+            )
+            
+        Debt.objects.create(debtor=debtor,creditor=creditor,money=money)
+        return Response("debt been sended",status.HTTP_200_OK)
+
+
+
+
 
 
 def home(request):

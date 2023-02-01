@@ -1,7 +1,5 @@
 from rest_framework import serializers
-from rest_framework.validators import UniqueValidator
-from user.models import User
-from user.models import MessageBox
+from user.models import User , MessageBox , Debt
 from rest_framework.validators import UniqueValidator
 
 class UserRegistretaionSerizalizers(serializers.ModelSerializer):
@@ -36,3 +34,8 @@ class UserMessageSerializers(serializers.ModelSerializer):
 
     def get_time_of_message(self,obj):
         return obj.created_on
+
+class DebtSerializers(serializers.ModelSerializer):
+    class Meta:
+        model = Debt
+        fields = '__all__'

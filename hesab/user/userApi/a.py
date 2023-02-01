@@ -1,5 +1,13 @@
-a = {"name":"ali"}
+# a = {"name":"ali"}
 
-a['dars'] = 'fizik'
+# a['dars'] = 'fizik'
 
-print(a)
+# print(a)
+
+
+# a = None
+# b = None
+
+
+# if not a or not b:
+#     print('saeed')
