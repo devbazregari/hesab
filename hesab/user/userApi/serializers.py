@@ -29,7 +29,10 @@ class UserRegistretaionSerizalizers(serializers.ModelSerializer):
         return user
 
 class UserMessageSerializers(serializers.ModelSerializer):
+    time = serializers.SerializerMethodField('get_time_of_message')
     class Meta:
         model = MessageBox
-        fields = ['sender','receiver','message']
+        fields = ['sender','receiver','message','time']
 
+    def get_time_of_message(self,obj):
+        return obj.created_on

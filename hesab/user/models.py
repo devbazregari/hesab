@@ -1,5 +1,12 @@
 from django.db import models
+from datetime import datetime
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
+
+
+class Commen(models.Model):
+    created_on = models.DateTimeField(default = datetime.now())
+    class Meta:
+        abstract = True 
 
 
 class CustomUserManager(BaseUserManager):
@@ -21,6 +28,7 @@ class User(AbstractBaseUser):
     username = models.CharField(max_length=60,blank=False,null=False)
     mobile = models.CharField(max_length=11 , blank=False , null=False , unique=True)
     media = models.ImageField(upload_to ='files/')
+    notif = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     created_on = models.DateTimeField(auto_now_add=True)
     updated_on = models.DateTimeField(auto_now=True)
@@ -34,7 +42,7 @@ class User(AbstractBaseUser):
     def __str__(self):
         return self.mobile
 
-class MessageBox(models.Model):
+class MessageBox(Commen,models.Model):
     sender = models.ForeignKey(to=User,blank=False,null=False,on_delete=models.CASCADE , related_name='user_sender')
     receiver = models.ForeignKey(to=User,blank=False,null=False,on_delete=models.CASCADE , related_name='user_receiver')
     message = models.CharField(max_length=3000,blank=True,null=True)
