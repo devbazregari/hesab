@@ -36,6 +36,15 @@ class UserMessageSerializers(serializers.ModelSerializer):
         return obj.created_on
 
 class DebtSerializers(serializers.ModelSerializer):
+    creditor_name = serializers.SerializerMethodField('get_creditor_name',read_only=True)
     class Meta:
         model = Debt
-        fields = '__all__'
+        fields = ['created_on','money','creditor_name']
+    
+    def get_creditor_name(self,obj):
+        return obj.creditor.username
+
+    
+
+
+
