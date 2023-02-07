@@ -56,6 +56,6 @@ class Debt(Commen,models.Model):
     money = models.BigIntegerField(blank=False,null=False)
         
     def __str__(self):
-        return self.message
+        return self.money
 
    

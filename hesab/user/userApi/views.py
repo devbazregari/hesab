@@ -2,18 +2,19 @@ from rest_framework.decorators import permission_classes
 from rest_framework.response import Response
 from rest_framework import serializers
 from knox.auth import AuthToken
-from .serializers import ( UserRegistretaionSerizalizers, DebtSerializers, UserMessageSerializers )
+from .serializers import ( UserRegistretaionSerizalizers, DebtSerializers,UserMessageSerializers )
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.generics import CreateAPIView , ListAPIView 
+from rest_framework.generics import CreateAPIView ,GenericAPIView , ListAPIView , UpdateAPIView , DestroyAPIView
+from .mixins import MultipleFieldLookupMixin
 from user.models import MessageBox , User , Debt
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 from hesab.celery import app
 from user.tasks import my_task
-from django.http import HttpResponse
+from django.http import HttpResponse 
 from rest_framework import status
+from rest_framework import mixins
 from django.db.models import F
-
-
+from rest_framework.pagination import PageNumberPagination
 
 class register(CreateAPIView):
     def post(self, request):
@@ -57,9 +58,33 @@ class send_user_message(CreateAPIView):
         except:
             return Response("there isn't an receiver or sender with this credentials",status.HTTP_400_BAD_REQUEST)
 
+
+class UpdateMessage(UpdateAPIView):
+    permission_classes = (IsAuthenticated,)
+    serializer_class = UserMessageSerializers
+    
+    def update(self, request,**kwargs):
+        request.data['sender']=request.user.pk
+        instance = MessageBox.objects.filter(sender_id=request.data['sender']).filter(receiver_id=request.data['receiver']).filter(message=request.data['perv_message']).last()
+        serializer = self.serializer_class(instance=instance,data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({"message has changed"})
+
+class DeleteMessage(MultipleFieldLookupMixin,DestroyAPIView):
+    permission_classes = (IsAuthenticated,)
+    serializer_class = UserMessageSerializers
+    lookup_fields = ["message","receiver"]
+    
+    def get_queryset(self):
+        return MessageBox.objects.filter(sender_id=self.request.user.pk)
+
+    
+   
 class show_user_message(ListAPIView):
     permission_classes = (IsAuthenticated,)
     serializer_class = UserMessageSerializers
+    pagination_class = PageNumberPagination
     def get_queryset(self):
         User.objects.filter(pk=self.request.user.id).update(notif=False)
         return MessageBox.objects.filter(receiver=self.request.user.id).all()
@@ -86,9 +111,35 @@ class SaveDebt(CreateAPIView):
         Debt.objects.create(debtor=debtor,creditor=creditor,money=money)
         return Response("debt been sended",status.HTTP_200_OK)
 
+
+class UpdateDebts(UpdateAPIView):
+    permission_classes = (IsAuthenticated,)
+    serializer_class = DebtSerializers
+    
+    def update(self, request,**kwargs):
+        try:
+            debtor = User.objects.get(mobile=kwargs['mobile'])
+            instance = Debt.objects.filter(creditor_id=request.user.pk).filter(debtor_id=debtor.pk).last()
+            serializer = self.serializer_class(instance=instance,data=request.data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response({"debt has changed"})
+        except:
+            raise serializers.ValidationError("false credentials")
+
+class DeleteDebts(MultipleFieldLookupMixin,DestroyAPIView):
+    permission_classes = (IsAuthenticated,)
+    serializer_class = UserMessageSerializers
+    lookup_fields = ["money","debtor"]
+
+    def get_queryset(self):
+        return Debt.objects.filter(creditor_id=self.request.user.pk)
+
+
 class ShowDebt(ListAPIView):
     permission_classes = (IsAuthenticated,)
     serializer_class = DebtSerializers
+    pagination_class = PageNumberPagination
     def get_queryset(self):
         debtor = User.objects.get(mobile=self.kwargs['mobile'])
         debtor_user = Debt.objects.filter(debtor_id=debtor.pk).filter(creditor_id=self.request.user.pk).all()
@@ -97,6 +148,7 @@ class ShowDebt(ListAPIView):
 class ShowMyDebt(ListAPIView):
     permission_classes = (IsAuthenticated,)
     serializer_class = DebtSerializers
+    pagination_class = PageNumberPagination
 
     def get_queryset(self):
         if Debt.objects.filter(debtor_id=self.request.user.pk).exists():
@@ -108,5 +160,5 @@ class ShowMyDebt(ListAPIView):
         raise serializers.ValidationError("you haven't debt yet bro ")
     
 def home(request):
-    my_task.delay()
+    my_task.delay() 
     return HttpResponse('hello')
