@@ -158,7 +158,12 @@ class ShowMyDebt(ListAPIView):
                 debts.append(obj)
             return debts
         raise serializers.ValidationError("you haven't debt yet bro ")
-    
-def home(request):
-    my_task.delay() 
-    return HttpResponse('hello')
+
+
+class SendWarning(CreateAPIView):    
+    permission_classes = (IsAuthenticated,)
+    serializer_class = DebtSerializers
+
+    def post(self,request):
+        my_task.delay({"range":request.data['range'],"creditor_id":request.user.pk}) 
+        return HttpResponse('hello')

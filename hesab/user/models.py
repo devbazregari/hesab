@@ -55,7 +55,5 @@ class Debt(Commen,models.Model):
     creditor = models.ForeignKey(to=User,blank=False,null=False,on_delete=models.CASCADE,related_name="creditor")
     money = models.BigIntegerField(blank=False,null=False)
         
-    def __str__(self):
-        return self.money
 
    

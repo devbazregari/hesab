@@ -3,7 +3,7 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path , include
 from .views import (
-    register , send_user_message,login , DeleteDebts,show_user_message , home, DeleteMessage , SaveDebt , ShowDebt , ShowMyDebt,UpdateDebts,UpdateMessage)
+    register , send_user_message,login , SendWarning , DeleteDebts,show_user_message , DeleteMessage , SaveDebt , ShowDebt , ShowMyDebt,UpdateDebts,UpdateMessage)
 
 urlpatterns = [
     path('register', register.as_view() ,name='register'),
@@ -17,6 +17,6 @@ urlpatterns = [
     path('delete/debt/<int:money>/<int:debtor>', DeleteDebts.as_view() ,name='delete_debt'),
     path('update/message', UpdateMessage.as_view() ,name='update_message'),
     path('delete/message/<str:message>/<int:receiver>', DeleteMessage.as_view() ,name='delete_message'),
-    path('test', home ,name='test'),
+    path('send/warning', SendWarning.as_view() ,name='send_warning'),
 ]+static(settings.MEDIA_URL , document_root = settings.MEDIA_ROOT)
 
