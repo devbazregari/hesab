@@ -8,6 +8,7 @@ from rest_framework.generics import CreateAPIView ,GenericAPIView , ListAPIView 
 from .mixins import MultipleFieldLookupMixin
 from user.models import MessageBox , User , Debt
 from rest_framework.authtoken.serializers import AuthTokenSerializer
+from rest_framework.exceptions import AuthenticationFailed
 from hesab.celery import app
 from user.tasks import my_task
 from django.http import HttpResponse 
@@ -15,6 +16,8 @@ from rest_framework import status
 from rest_framework import mixins
 from django.db.models import F
 from rest_framework.pagination import PageNumberPagination
+from rest_framework_simplejwt.tokens import RefreshToken
+
 
 class register(CreateAPIView):
     def post(self, request):
@@ -22,24 +25,41 @@ class register(CreateAPIView):
         serializer = UserRegistretaionSerizalizers(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
-        _,token = AuthToken.objects.create(user)
-        return Response({
-            'user_id':user.pk,
-            'mobile':user.mobile,
-            'token':token,
-        })
+        if user:
+            refresh = RefreshToken.for_user(user)
+            return Response(
+                {
+                    'refresh': str(refresh),
+                    'access': str(refresh.access_token),
+                    'user': user.id
+                    
+                },
+            )
+        else:
+            return Response('invalid authentication credentials', status=status.HTTP_400_BAD_REQUEST)
+
 
 
 class login(CreateAPIView):
     def post(self, request):
-        serializer = AuthTokenSerializer(data = request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.validated_data['user']
-        _,token = AuthToken.objects.create(user)
-        return Response({
-            'username':user.username,
-            'token':token
-        })
+        mobile = request.data['mobile']
+        password = request.data['password']
+        user = User.objects.get(mobile=mobile)
+
+        if user is None:
+            raise AuthenticationFailed('user not find')
+        if not user.check_password(password):
+            raise AuthenticationFailed('password is incorrect')
+        
+        refresh = RefreshToken.for_user(user)
+        return Response(
+                {
+                    'refresh': str(refresh),
+                    'access': str(refresh.access_token),
+                    'user': user.id
+                    
+                },
+            )
 
 
 class send_user_message(CreateAPIView):
@@ -157,7 +177,7 @@ class ShowMyDebt(ListAPIView):
             for obj in Debt.objects.filter(debtor_id=self.request.user.pk).all():
                 debts.append(obj)
             return debts
-        raise serializers.ValidationError("you haven't debt yet bro ")
+        raise serializers.ValidationError("you haven't debt yet , lucky you ")
 
 
 class SendWarning(CreateAPIView):    
